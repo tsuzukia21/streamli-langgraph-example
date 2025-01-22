@@ -15,7 +15,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_anthropic import ChatAnthropic
 from langchain_google_genai import ChatGoogleGenerativeAI
 import streamlit_antd_components as sac
-encoding: Encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
+encoding: Encoding = tiktoken.encoding_for_model("gpt-4o")
 
 def load_html_template(template_name, **kwargs):
     with open(os.path.join('templates', template_name), 'r', encoding='utf-8') as file:
@@ -84,27 +84,12 @@ def show_messages(messages,memory,edit,new_message=None):
             st.markdown(new_message.replace("\n","<br>"),unsafe_allow_html=True)
 
 def check_token():
-    if st.session_state.engine=="gpt-3.5-turbo":
-        if st.session_state.total_tokens>12000:
-            persent=math.floor(st.session_state.total_tokens/120)
-            st.error(f'エラー：文章量が上限に対し、{persent}%となっています。  \n不必要な箇所を削除するか会話をリセットしてください', icon="🚨")
-            if st.button('clear chat history'):
-                clear_chat()
-            st.stop()
-    elif st.session_state.engine=="gpt-4-turbo-preview":
-        if st.session_state.total_tokens>20000:
-            persent=math.floor(st.session_state.total_tokens/200)
-            if st.button('clear chat history'):
-                clear_chat()
-            st.error(f'エラー：文章量が上限に対し、{persent}%となっています。  \n不必要な箇所を削除するか会話をリセットしてください', icon="🚨")
-            st.stop()
-    elif st.session_state.engine=="gpt-4" or st.session_state.engine=="claude-3-opus" or st.session_state.engine=="gemini-1.0-pro":
-        if st.session_state.total_tokens>7000:
-            persent=math.floor(st.session_state.total_tokens/70)
-            if st.button('clear chat history'):
-                clear_chat()
-            st.error(f'エラー：文章量が上限に対し、{persent}%となっています。  \n不必要な箇所を削除するか会話をリセットしてください', icon="🚨")
-            st.stop()
+    if st.session_state.total_tokens>20000:
+        persent=math.floor(st.session_state.total_tokens/200)
+        if st.button('clear chat history'):
+            clear_chat()
+        st.error(f'エラー：文章量が上限に対し、{persent}%となっています。  \n不必要な箇所を削除するか会話をリセットしてください', icon="🚨")
+        st.stop()
     if len(st.session_state.messages) > 30:
         if st.button('clear chat history'):
             clear_chat()
@@ -158,7 +143,7 @@ def st_Chat():
     st.write("**ChatGPTと会話することが出来ます。**")
 
     with st.expander("オプション"):
-        engine = st.selectbox("model",("gpt-4-turbo-preview","gpt-4","gpt-3.5-turbo","claude-3-opus","gemini-1.0-pro"),help="modelを選択できます。")
+        engine = st.selectbox("model",("gpt-4o","gpt-4o-mini","claude-3-5-sonnet","gemini-exp-1206"),help="modelを選択できます。")
         system_prompt = st.text_area("system prompt",value="あなたは優秀なAIアシスタントです。",help="systemにpromptを与えられます。初回メッセージ送信時のみ有効です。")
         temperature = st.slider(label="temperature",min_value=0.0, max_value=1.0,value=st.session_state.temperature,help="生成されるテキストのランダム性を制御します。")
 
@@ -169,12 +154,12 @@ def st_Chat():
     if engine != st.session_state.engine:
         st.session_state.engine = engine
 
-    if engine == "gpt-4-turbo-preview" or engine == "gpt-4" or engine == "gpt-3.5-turbo":
+    if engine == "gpt-4o" or engine == "gpt-4o-mini":
         model = ChatOpenAI(model = st.session_state.engine,temperature=st.session_state.temperature)
-    elif engine == "claude-3-opus":
-        model = ChatAnthropic(model_name="claude-3-opus-20240229",temperature=st.session_state.temperature)
-    elif engine == "gemini-1.0-pro":
-        model = ChatGoogleGenerativeAI(model="gemini-pro",convert_system_message_to_human=True,temperature=st.session_state.temperature)
+    elif engine == "claude-3-5-sonnet":
+        model = ChatAnthropic(model_name="claude-3-5-sonnet-20240620",temperature=st.session_state.temperature)
+    elif engine == "gemini-exp-1206":
+        model = ChatGoogleGenerativeAI(model="gemini-exp-1206",temperature=st.session_state.temperature)
 
     prompt_template = ChatPromptTemplate.from_messages(
         [
