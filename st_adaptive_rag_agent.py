@@ -397,5 +397,3 @@ if prompt := st.chat_input("質問を入力してください"):
         st.markdown(prompt)
     
     asyncio.run(run_workflow(inputs))
-
-    st.markdown(st.session_state.value)
