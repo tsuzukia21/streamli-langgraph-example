@@ -271,7 +271,6 @@ Context: {context}"""),
     llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, streaming=True)
     rag_chain = prompt | llm | StrOutputParser()
     response = rag_chain.invoke({"context": docs_str, "question": question})
-    print(response)
     return {"messages": ("assistant",response)}
 
 async def run_workflow(inputs):
@@ -358,6 +357,9 @@ system_prompt = """あなたはとある株式会社の規定アシスタント�
 回答に文書を参照した場合には、回答の最後には参照した文書名、ページ、文書の改定日を示してください
 """
 
+st.title("自己修正Agentic RAG")
+st.write("社内規定のAgentic RAGチャットボットです。")
+
 if prompt := st.chat_input("質問を入力してください"):
     if st.session_state.value is not None:
         messages_history = st.session_state.value["messages"]
@@ -367,10 +369,17 @@ if prompt := st.chat_input("質問を入力してください"):
                     st.markdown(message.content)
             elif message.type == "ai":
                 with st.chat_message("assistant", avatar=":material/psychology:"):
-                    if isinstance(message.content, list):
-                        st.markdown(message.content[0]["text"])
+                    # if isinstance(message.content, list):
+                    if message.content == "":
+                        # st.markdown(message.content[0]["text"])
+                        tool_calls = message.additional_kwargs['tool_calls'][0]
+                        name = tool_calls['function']['name']
+                        args = tool_calls['function']['arguments']
+                        st.markdown(f"**ツール使用 : {name}**")
+                        st.markdown(args)
                     else:
                         st.markdown(message.content)
+
     if st.session_state.value is not None:
         inputs = {
             "messages": [
@@ -388,3 +397,5 @@ if prompt := st.chat_input("質問を入力してください"):
         st.markdown(prompt)
     
     asyncio.run(run_workflow(inputs))
+
+    st.markdown(st.session_state.value)
